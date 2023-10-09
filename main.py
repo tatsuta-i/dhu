@@ -38,16 +38,13 @@ def pt2sec(pt_time):
 def url(video_id, wait_time, title, artist):
     url = "https://www.youtube.com/watch?v=" + video_id
 
-    chrome_path = r"C:/Program Files/Google/Chrome/Application/chrome.exe"
-    webbrowser.register('chrome', None, webbrowser.BackgroundBrowser(chrome_path))
-    print(webbrowser.get('chrome').open_new_tab(url))
-    ser.write((title+'\n').encode('Shift-JIS'))
-    ser.write((artist+'\n').encode('Shift-JIS'))
+    ser.write((str(title)+'\n').encode('Shift-JIS'))
+    ser.write((str(artist)+'\n').encode('Shift-JIS'))
+    ser.write((str(wait_time)+'\n').encode('Shift-JIS'))
     # or
     # ser.write(title.encode('Shift-JIS'))
     # ser.write(artist.encode('Shift-JIS'))
-    # webbrowser.open(url, new=1, autoraise=True)
-    # print("title: "+title+", artist: "+artist)
+    webbrowser.open(url, new=1, autoraise=True)
     time.sleep(wait_time)
 
 def makelist(data_list,listnum,settime,time,nnum):
@@ -71,9 +68,9 @@ def makelist(data_list,listnum,settime,time,nnum):
             i+=1
             continue
         else:
-            if settime-tmptime<1:
+            if settime-tmptime<10:
                 print(i)
-                ser.write((tmptime+'\n').encode('utf-8'))
+                ser.write((str(tmptime)+'\n').encode('utf-8'))
                 url(data_list[i][6],alt,data_list[i][2],data_list[i][5])
                 return 1
 
@@ -163,14 +160,6 @@ def setCountDetail(ws,idList,youtube):
             result = kks.convert(kanji)
             kana += result[0]['kana']
             roma += result[0]['passport']
-        
-        # if(len(kana) > 15):
-        #     kana = kana[:12]
-        #     kana += "..."
-
-        # if(len(roma) > 15):
-        #     roma = roma[:12]
-        #     roma += "..."
 
         art_kana = ""
         art_roma = ""
@@ -179,14 +168,6 @@ def setCountDetail(ws,idList,youtube):
             art_kana += result[0]['kana']
             art_roma += result[0]['passport']
         
-        # if(len(art_kana) > 15):
-        #     art_kana = art_kana[:12]
-        #     art_kana += "..."
-
-        # if(len(art_roma) > 15):
-        #     art_roma = art_roma[:12]
-        #     art_roma += "..."
-
         ws.writerow([item['snippet']['title'],kana,roma,item['snippet']['channelTitle'],art_kana,art_roma,item['id'],pt2sec(pt_time)])
 
 #================================================================================
@@ -210,10 +191,12 @@ playList = {
 dt_now = datetime.datetime.now()
 ser = serial.Serial('/dev/ttyUSB0', 115200)  # Adjust the device and baud rate accordingly
 
-file_num = 1
-# file_num = ser.readline().decode('utf-8').strip()
-# file_num = int(file_num)
-#print('FILE num:%d',file_num)
+time.sleep(3)
+while ser.in_waiting:
+    file_num = ser.readline().decode('utf-8').strip()
+    file_num = int(file_num)
+    print('FILE num: ',file_num)
+    break
 
 with open(FILENAME[file_num-1], 'w', encoding='Shift-JIS', errors='ignore', newline='') as f:
     writer = csv.writer(f)
@@ -230,15 +213,16 @@ with open(FILENAME[file_num-1],"r",encoding="Shift-JIS") as f:
     tester=csv.reader(f)
     row_list = [row for row in tester]
 
-settime = 300
-# settime = ser.readline().decode('utf-8').strip()
-# settime = int(settime)
+while ser.in_waiting:
+    settime = ser.readline().decode('utf-8').strip()
+    settime = int(settime)
+    print('Settime: ',settime)
+    break
 
 for i in range(len(row_list)):
     if flag==0:
         flag=1
         continue
-    #print(row[1])
     alt = row_list[i][7]
     alt = float(alt)
     print('alt=',alt,'i=',i)
@@ -252,3 +236,10 @@ if result==0:
 else:
     ser.write(b'Listening_completed.\n')
     print("End")
+    while True:
+        time.sleep(20)
+        if ser.in_waiting:
+            data = ser.readline().decode('utf-8').strip()
+            if data == 'Shutdown':
+                os.system("sudo shutdown -h now")
+                break
