@@ -69,12 +69,10 @@ int length = 0;
 int start_i = 0;
 int end_j = 15;
 String receivedData = "";
-String songname     = "";
-String artistname   = "";
 String song         = "";
 String artist       = "";
-String playtimedata = "";
 String allplaytime  = "";
+String itoito[3] = {"", "", ""};
 bool a_song         = false;
 bool a_artist       = false;
 /////////////////////////////////////////////////////
@@ -446,6 +444,7 @@ void loop() {
       if (Serial.available() > 0) { 
       // Read the incoming data as a string: 
       gettext =Serial.readString(); 
+      gettext.trim();      
       }
       if(gettext == "Listing_completed."){
         if(ModeCode != 3){
@@ -458,29 +457,33 @@ void loop() {
       break;
 ///////////////////////////////////////////////////////////////////////////////////////////////////
     case 10://E7再生中
-      while (Serial.available() > 0) {
-      incomingChar = Serial.read(); // 1バイト読み込み
       // 改行コード（'\n'）が受信されたら、データを処理する
-      if (incomingChar == '\n') {
-      // 最初のデータ受信時
-      if (allplaytime == "") {
-        allplaytime = receivedData;
-      }else{
-        // 2回目以降のデータ受信時
-        // 受信したデータを処理する関数を呼び出す
-        processData(songname, artistname, playtimedata);
-      }
-      // 受信したデータをクリア
-      songname = "";
-      artistname = "";
-      playtimedata = "";
-      a_song = false;
-      a_artist = false;
-      }
-      else {
-        // 受信したデータを格納
-        receivedData += incomingChar;
-      }
+      if (Serial.available() > 0) {
+        gettext =Serial.readString(); 
+        // 最初のデータ受信時
+        if (allplaytime == "") {
+          allplaytime = gettext;
+          Serial.println("morimori allplaytime");
+        }else{
+          // 2回目以降のデータ受信時
+          neginegi = 0;
+          for(idx = 0; idx < gettext.length(); idx++){
+            if(gettext[idx] == ','){
+              neginegi++;
+              continue;
+            }
+            itoito[neginegi] += gettext[idx];
+          }
+          Serial.println("morimori texts");
+          // 受信したデータを処理する関数を呼び出す
+          processData(itoito[0], itoito[1], itoito[2]);
+        }
+        // 受信したデータをクリア
+        for(idx = 0; idx < 3; idx++){
+          itoito[idx] = "";
+        }
+        a_song = false;
+        a_artist = false;
       }
     break;
 ///////////////////////////////////////////////////////////////////////////////////////////////////
