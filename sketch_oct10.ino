@@ -7,8 +7,8 @@
 #define WAIT_TIM 100 //100msウェイト
 
 ////////////////////文字列////////////////
-char text1[20];//1行目の文字列
-char text2[20];//2行目の文字列
+char text1[20] = "";//1行目の文字列
+char text2[20] = "";//2行目の文字列
 String gettext;
 String send_string;
 char music_list_1[20] = "music1           ";
@@ -59,6 +59,7 @@ int ListCode = -1;
 int TimeCode = -1;
 int SendCode[3] = {-1,-1,-1};
 int array_length = sizeof(SendCode) / sizeof(SendCode[0]);
+String csv_string = "";
 ////////////////////E7に使うやつ///////////////////
 int playtime = 0;
 int Blue_LED = 0;
@@ -126,7 +127,7 @@ void loop() {
       digitalWrite(PIN_led_power_g, HIGH);//🫠
       digitalWrite(PIN_led_power_b, HIGH);//🫠
       strcpy(text1,"NOW LOADING ...    ");
-      sprintf(text2, "%d[s] left         ", neginegi);
+      strcpy(text2, "                    ");
       writeCommand(0x02);
       for(idx = 0; idx < 20; idx++) { 
       writeData(text1[idx]);
@@ -136,8 +137,7 @@ void loop() {
         writeData(text2[idx]);
       }
       contrast_max(); //輝度を最大に設定 
-      if(idx == 0){
-      for(idx=0;idx<=180;idx+=1){
+      for(idx=0;idx<=90;idx+=1){
         switch(idx%3){
           case 0:
             digitalWrite(PIN_led_power_r, HIGH);
@@ -158,18 +158,12 @@ void loop() {
         myServo.write(idx); //回転角を指定
         delay(WAIT_TIM); //回転角を指定するまでの待機時間
       }
-      neginegi -= 18;
-      }
       digitalWrite(PIN_led_power_r, HIGH);
       digitalWrite(PIN_led_power_g, LOW);
       digitalWrite(PIN_led_power_b, HIGH);
+      flag = 1;
+      writeCommand(ClearDisplay); // Clear Display 
       delay(1000);
-      neginegi--;
-      if(neginegi == 0){
-        flag = 1;
-        writeCommand(ClearDisplay); // Clear Display 
-        delay(1000);
-      }
       break;
 ///////////////////////////////////////////////////////////////////////////////////////////////////
     case 1://E3再生リスト名取得
@@ -315,7 +309,7 @@ void loop() {
       }
       contrast_max(); //輝度を最大に設定 
       if(flag_tact != 0){
-        TimeCode = encoderCount*60;
+        TimeCode = encoderCount;
         encoderCount = 10;
         if(ModeCode == 3){
           flag = 6;
@@ -436,9 +430,14 @@ void loop() {
       break;
 ///////////////////////////////////////////////////////////////////////////////////////////////////
     case 8://E5送信
+      SendCode[0] = ModeCode;
+      SendCode[2] = TimeCode;
+      SendCode[1] = ListCode;
       send_string = intArrayToCSV(SendCode, array_length);
       Serial.println("sendCode:" + send_string);
+      if (Serial.available() > 0) { 
       flag = 9;//後で変える
+      }
       delay(1000);
       break;
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -574,10 +573,10 @@ void init_oled(){
 }
 //通信用
 String intArrayToCSV(int array[], int array_length) {
-    String csv_string = "";
-    for (int i = 0; i < array_length; i++) {
-        csv_string += String(array[i]);
-        if (i < array_length - 1) { // 最後の要素でない場合、カンマを追加
+    csv_string = "";
+    for (idx = 0; idx < array_length; idx++) {
+        csv_string += String(array[idx]);
+        if (idx < array_length - 1) { // 最後の要素でない場合、カンマを追加
             csv_string += ",";
         }
     }
@@ -585,11 +584,10 @@ String intArrayToCSV(int array[], int array_length) {
 }
 //E7-16文字抽出用
 void createSubstringPatterns(String inputString, String outputString, int startIndex, int endIndex) {
-    int length = inputString.length();
-    int outputIndex = 0;   
-    for (int i = startIndex; i <= endIndex && i < length; i++) {
-        outputString[outputIndex] = inputString[i];
-        outputIndex++;
+    neginegi = 0;   
+    for (idx = startIndex; idx <= endIndex && idx < inputString.length(); idx++) {
+        outputString[neginegi] = inputString[idx];
+        neginegi++;
     }
 }
 //E7-OLED用
@@ -627,13 +625,13 @@ void processData(String songs, String artists, String playtimes) {
     //OLEDに表示するための下処理
     //song<16の場合に=16になるよう空白追加
     if (song.length() < 16) {
-      for (int i = song.length(); i < 16; i++) {
+      for (idx = song.length(); idx < 16; idx++) {
         song += ' ';
       }
     }
     //song<16の場合に末尾に空白4つ追加
     else if (song.length() > 16 && !a_song) {
-      for (int i = 0; i < 4; i++) {
+      for (idx = 0; idx < 4; idx++) {
         song += ' ';
         a_song = true;
       }
@@ -641,12 +639,12 @@ void processData(String songs, String artists, String playtimes) {
     else{}
     //artistも同様に行う
     if(artist.length()<16){
-      for (int i = artist.length(); i < 16; i++) {
+      for ( idx = artist.length(); idx < 16; idx++) {
         artist += ' ';
       }
     }
     else if(artist.length()>16 && !a_artist){
-      for (int i = 0; i < 4; i++) {
+      for (idx = 0; idx < 4; idx++) {
         song += ' ';
         a_artist = true;
       }
