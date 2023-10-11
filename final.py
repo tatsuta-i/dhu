@@ -11,6 +11,7 @@ import time
 import os
 import random
 import serial
+import subprocess, shlex
 from datetime import date, timedelta, timezone
 from openpyxl.styles import Font
 #================================================================================
@@ -35,23 +36,52 @@ def pt2sec(pt_time):
         raise ValueError(msg)
 
 # 再生用
-def url(video_id, wait_time, title, artist):
+def url(video_id, wait_time, title, artist, tab):
     url = "https://www.youtube.com/watch?v=" + video_id
 
     # chrome_path = r"C:/Program Files/Google/Chrome/Application/chrome.exe"
     # webbrowser.register('chrome', None, webbrowser.BackgroundBrowser(chrome_path))
     # print(webbrowser.get('chrome').open_new_tab(url))
-    ser.write((title+'\n').encode('Shift-JIS'))
-    ser.write((artist+'\n').encode('Shift-JIS'))
-    ser.write((wait_time+'\n'.encode('Shift-JIS')))
+    send = title + ',' + artist + ',' + str(wait_time)
+    print(send)
+    # while True:
+    print("waiting",ser.in_waiting)
+    ser.readline()
+    ser.write((send).encode('Shift-JIS'))
+        # time.sleep(1)
+        # if ser.in_waiting:
+            # data = ser.readline().decode('utf-8').strip()
+            # print("url",data)
+            # break
+        
+    # ser.write((title).encode('Shift-JIS'))
+    # ser.write((artist).encode('Shift-JIS'))
+    # ser.write((wait_time).encode('Shift-JIS'))
     # or
     # ser.write(title.encode('Shift-JIS'))
     # ser.write(artist.encode('Shift-JIS'))
-    webbrowser.open(url, new=1, autoraise=True)
+    if tab == 0:
+        webbrowser.open(url, new=1, autoraise=True)
+    else:
+        webbrowser.open(url, new=2, autoraise=True)
     # print("title: "+title+", artist: "+artist)
     time.sleep(wait_time)
 
-def makelist(data_list,listnum,settime,time,nnum):
+# csv形式の文字列をint型配列に変換
+def csv_to_int_list(csv_string):
+    """
+    Convert a CSV formatted string to a list of integers.
+    
+    Parameters:
+    - csv_string: String formatted as CSV.
+    
+    Returns:
+    - List of integers.
+    """
+    return [int(x) for x in csv_string.split(',')]
+
+#list
+def makelist(data_list,listnum,settime,neginegi_time,nnum):
     i=nnum
     flag=0
     if listnum==nnum:
@@ -59,29 +89,39 @@ def makelist(data_list,listnum,settime,time,nnum):
     for i in range(nnum,listnum):
         if(i==listnum):
             return 0
-        print('time:',time,'nnum:',nnum,'i:',i)
+        print('time:',neginegi_time,'nnum:',nnum,'i:',i)
         if flag==0:
             flag=1
             continue
         alt=data_list[i][7]
         alt = float(alt)
         alt = int(alt)
-        tmptime=time+alt
-        print(tmptime,'=',time,'+',alt)
+        tmptime=neginegi_time+alt
+        print(tmptime,'=',neginegi_time,'+',alt)
         if tmptime>settime:
             i+=1
             continue
         else:
-            if settime-tmptime<1:
+            if settime-tmptime<10:
                 print(i)
-                ser.write((tmptime+'\n').encode('utf-8'))
-                url(data_list[i][6],alt,data_list[i][2],data_list[i][5])
+                while True:
+                    print(str(tmptime))
+                    print("waiting",ser.in_waiting)
+                    ser.readline()
+                    ser.write((str(tmptime)).encode('Shift-JIS'))
+                    time.sleep(1)
+                    if ser.in_waiting:
+                        data = ser.readline().decode('utf-8').strip()
+                        print("time",data)
+                        break
+                print('out')
+                url(data_list[i][6],alt,data_list[i][2],data_list[i][5],0)
                 return 1
 
         print('call makelist',tmptime,i)
         res=makelist(data_list,listnum,settime,tmptime,i)
         if res==1:
-            url(data_list[i][6],alt,data_list[i][2],data_list[i][5])
+            url(data_list[i][6],alt,data_list[i][2],data_list[i][5],1)
             return 1
         
     print('kill by [i]:',i)
@@ -161,13 +201,29 @@ def setCountDetail(ws,idList,youtube):
             result = kks.convert(kanji)
             kana += result[0]['kana']
             roma += result[0]['passport']
+            
+        if(len(kana) > 48):
+            kana = kana[:45]
+            kana += "..."
 
+        if(len(roma) > 48):
+            roma = roma[:45]
+            roma += "..."
+            
         art_kana = ""
         art_roma = ""
         for kanji in item['snippet']['channelTitle']:
             result = kks.convert(kanji)
             art_kana += result[0]['kana']
             art_roma += result[0]['passport']
+            
+        if(len(kana) > 48):
+            kana = kana[:45]
+            kana += "..."
+
+        if(len(roma) > 48):
+            roma = roma[:45]
+            roma += "..."
 
         ws.writerow([item['snippet']['title'],kana,roma,item['snippet']['channelTitle'],art_kana,art_roma,item['id'],pt2sec(pt_time)])
 
@@ -178,9 +234,12 @@ def split_list(l, n):
     for idx in range(0, len(l), n):
         yield l[idx:idx + n]
 
+# args = shlex.split("sudo dhclient wlan0")
+# ret = subprocess.call(args)
+            
 # YoutubeAPI用キー
 API_KEY = 'AIzaSyDVqEeWLn8aQv8-y3lZ3EKrtD7k9TTg2dQ' #ここに各々で取得したYoutube用のAPIキーを入れる
-FILENAME = ["Youtube1.csv", "Yotube2.csv", "Youtube3.csv"]
+FILENAME = ["Youtube1.csv", "Youtube2.csv", "Youtube3.csv"]
 youtube = initYoutube(API_KEY)
 
 #「ワークシート名:プレイリストID」の辞書型配列にしておく
@@ -197,18 +256,32 @@ playList = ["PL4EJWCM_RXBHad4pVU1pNYFNXTAgy_crx", "PLO3JxJH4SmvPpuLRqtwr5aWuie9G
 
 dt_now = datetime.datetime.now()
 ser = serial.Serial('/dev/ttyUSB0', 115200)  # Adjust the device and baud rate accordingly
+tab = 0
 
-time.sleep(3)
-while ser.in_waiting:
-    file_num = ser.readline().decode('utf-8').strip()
-    file_num = int(file_num)
-    print('FILE num: ',file_num)
-    break
+while True:
+    if ser.in_waiting:
+        data = ser.readline().decode('utf-8').strip()
+        print(f"Received: {data}")
+        if 'sendCode:' in data:
+            code = data[data.find(":")+1 : ]
+            #print(code)
+            print(csv_to_int_list(code))
+            code = csv_to_int_list(code)
+            ser.write(('get\n').encode('UTF-8'))
+            break
+        
+file_num = code[1]
+file_num = int(file_num)
+print('FILE num: ',file_num)
 
-with open(FILENAME[file_num-1], 'w', encoding='Shift-JIS', errors='ignore', newline='') as f:
+settime = code[2]
+settime = int(settime)
+settime = settime * 60
+print('Set time: ',settime)
+
+with open(FILENAME[file_num-11], 'w', encoding='Shift-JIS', errors='ignore', newline='') as f:
     writer = csv.writer(f)
-    for key in playList:
-        setCountDetail(writer,getIdListFromPlaylist(playList[file_num-1],youtube),youtube)    
+    setCountDetail(writer,getIdListFromPlaylist(playList[file_num-11],youtube),youtube)    
 
 print('start serch')
 i=0
@@ -216,19 +289,13 @@ listmax=500
 result=0
 flag=0
 
-with open(FILENAME[file_num-1],"r",encoding="Shift-JIS") as f:
+with open(FILENAME[file_num-11],"r",encoding="Shift-JIS") as f:
     tester=csv.reader(f)
     row_list = [row for row in tester]
 
-while ser.in_waiting:
-    settime = ser.readline().decode('utf-8').strip()
-    settime = int(settime)
-    print('Settime: ',settime)
-    break
-
 for i in range(len(row_list)):
-    if flag==0:
-        flag=1
+    if flag == 0:
+        flag = 1
         continue
     alt = row_list[i][7]
     alt = float(alt)
@@ -236,18 +303,22 @@ for i in range(len(row_list)):
     result=makelist(row_list,len(row_list),settime,int(alt),i)
     if result==1:
         print(i)
-        url(row_list[i][6],alt,row_list[i][2],row_list[i][5])
+        url(row_list[i][6],alt,row_list[i][2],row_list[i][5],1)
         print('break')
         break
 if result==0:
     print('cannot')
 else:
-    ser.write(b'Listening_completed.\n')
+    ser.readline()
+    print("waiting",ser.in_waiting)
+    ser.write(b'Listening_completed.')
     print("End")
     while True:
-        time.sleep(20)
+        print("waiting",ser.in_waiting)
         if ser.in_waiting:
+            print("End")
+            # ser.readline()
             data = ser.readline().decode('utf-8').strip()
+            print(data)
             if data == 'Shutdown':
                 os.system("sudo shutdown -h now")
-                break
