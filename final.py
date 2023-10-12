@@ -46,8 +46,10 @@ def url(video_id, wait_time, title, artist, tab):
     print(send)
     # while True:
     print("waiting",ser.in_waiting)
-    ser.readline()
+    if ser.in_waiting:
+        ser.readline()
     ser.write((send).encode('Shift-JIS'))
+    browser = webbrowser.get('../../../bin/chromium-browser')
         # time.sleep(1)
         # if ser.in_waiting:
             # data = ser.readline().decode('utf-8').strip()
@@ -61,9 +63,9 @@ def url(video_id, wait_time, title, artist, tab):
     # ser.write(title.encode('Shift-JIS'))
     # ser.write(artist.encode('Shift-JIS'))
     if tab == 0:
-        webbrowser.open(url, new=1, autoraise=True)
+        browser.open(url, new=1, autoraise=True)
     else:
-        webbrowser.open(url, new=2, autoraise=True)
+        browser.open(url, new=2, autoraise=True)
     # print("title: "+title+", artist: "+artist)
     time.sleep(wait_time)
 
@@ -107,7 +109,6 @@ def makelist(data_list,listnum,settime,neginegi_time,nnum):
                 while True:
                     print(str(tmptime))
                     print("waiting",ser.in_waiting)
-                    ser.readline()
                     ser.write((str(tmptime)).encode('Shift-JIS'))
                     time.sleep(1)
                     if ser.in_waiting:
