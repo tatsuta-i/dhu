@@ -239,7 +239,7 @@ def split_list(l, n):
 # ret = subprocess.call(args)
             
 # YoutubeAPI用キー
-API_KEY = 'AIzaSyDVqEeWLn8aQv8-y3lZ3EKrtD7k9TTg2dQ' #ここに各々で取得したYoutube用のAPIキーを入れる
+API_KEY = '' #ここに各々で取得したYoutube用のAPIキーを入れる
 FILENAME = ["Youtube1.csv", "Youtube2.csv", "Youtube3.csv"]
 youtube = initYoutube(API_KEY)
 
@@ -250,10 +250,8 @@ youtube = initYoutube(API_KEY)
 # }, {
 #     # 'ボカロ':'PLVe76sDJ5THhs3NkKPjxlNFWxkcJ1YTwa',
 #     'ボカロ':'PLO3JxJH4SmvPpuLRqtwr5aWuie9GVTfaj',
-# }, {
-#     '趣味':'PLMzfDtnmpEYS2gBPKHfZB2QX0yYhMb4Px'
-# }]
-playList = ["PL4EJWCM_RXBHad4pVU1pNYFNXTAgy_crx", "PLO3JxJH4SmvPpuLRqtwr5aWuie9GVTfaj", "PLMzfDtnmpEYS2gBPKHfZB2QX0yYhMb4Px"]
+# }
+playList = ["PL4EJWCM_RXBHad4pVU1pNYFNXTAgy_crx", "PLO3JxJH4SmvPpuLRqtwr5aWuie9GVTfaj"]
 
 dt_now = datetime.datetime.now()
 ser = serial.Serial('/dev/ttyUSB0', 115200)  # Adjust the device and baud rate accordingly
