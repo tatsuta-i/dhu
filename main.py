@@ -178,7 +178,7 @@ def split_list(l, n):
         yield l[idx:idx + n]
 
 # YoutubeAPI用キー
-API_KEY = 'AIzaSyDVqEeWLn8aQv8-y3lZ3EKrtD7k9TTg2dQ' #ここに各々で取得したYoutube用のAPIキーを入れる
+API_KEY = '' #ここに各々で取得したYoutube用のAPIキーを入れる
 FILENAME = ["Youtube1.csv", "Yotube2.csv", "Youtube3.csv"]
 youtube = initYoutube(API_KEY)
 
